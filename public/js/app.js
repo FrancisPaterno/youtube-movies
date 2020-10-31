@@ -2015,6 +2015,7 @@ __webpack_require__.r(__webpack_exports__);
 //
 //
 //
+//
 
 
 
@@ -2041,7 +2042,8 @@ __webpack_require__.r(__webpack_exports__);
       shareMovie: false,
       youtubeURL: '',
       user: null,
-      saving: false
+      saving: false,
+      errors: []
     };
   },
   mounted: function mounted() {
@@ -2097,12 +2099,25 @@ __webpack_require__.r(__webpack_exports__);
           console.log(response.data);
           _this3.shareMovie = false;
           _this3.saving = false;
+        })["catch"](function (errors) {
+          console.log('navbar errors', errors);
+
+          if (errors.response.status === 422) {
+            _this3.errors = errors.response.data.errors;
+          }
+
+          if (errors.response.status === 500) {
+            _this3.errors = errors.response.data.errors;
+          }
+
+          _this3.saving = false;
         });
       }
     },
     closeShare: function closeShare() {
       this.youtubeURL = '';
       this.$v.$reset();
+      this.errors = [];
     },
     getUser: function getUser() {
       var _this4 = this;
@@ -2194,6 +2209,13 @@ function _defineProperty(obj, key, value) { if (key in obj) { Object.definePrope
 //
 //
 //
+//
+//
+//
+//
+//
+//
+//
 // import Youtube from '../apis/youtube';
 
 
@@ -2232,8 +2254,14 @@ function _defineProperty(obj, key, value) { if (key in obj) { Object.definePrope
       this.getUser();
     }
   },
-  computed: _objectSpread({}, Object(vuex__WEBPACK_IMPORTED_MODULE_0__["mapGetters"])(["getMovies"])),
+  computed: _objectSpread({}, Object(vuex__WEBPACK_IMPORTED_MODULE_0__["mapGetters"])(["getMovies", "getPerPage"])),
   methods: {
+    displayData: function displayData() {
+      this.getAllMovies({
+        page: 1,
+        rows: this.getPerPage
+      });
+    },
     getAllMovies: function getAllMovies(param) {
       var _this2 = this;
 
@@ -2303,7 +2331,7 @@ function _defineProperty(obj, key, value) { if (key in obj) { Object.definePrope
 
     this.getAllMovies({
       page: 1,
-      rows: 5
+      rows: this.getPerPage
     });
   }
 });
@@ -39288,6 +39316,14 @@ var render = function() {
                                 }
                               }),
                               _vm._v(" "),
+                              _vm.errors.youtubeURL
+                                ? _c(
+                                    "span",
+                                    { staticClass: "error--text ml-8" },
+                                    [_vm._v(_vm._s(_vm.errors.youtubeURL[0]))]
+                                  )
+                                : _vm._e(),
+                              _vm._v(" "),
                               _c(
                                 "v-btn",
                                 {
@@ -39613,6 +39649,11 @@ var render = function() {
         "v-footer",
         { staticClass: "font-weight-medium", attrs: { absolute: "" } },
         [
+          _c("rowperpage", {
+            attrs: { collection: "movies", store: "youtube" },
+            on: { updaterow: _vm.displayData }
+          }),
+          _vm._v(" "),
           _c("paginate", {
             staticClass: "mx-auto",
             attrs: {

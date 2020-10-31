@@ -4,10 +4,13 @@ namespace App\Http\Controllers;
 
 use App\Models\MovieVotes;
 use App\Models\SharedMovie;
+use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Database\QueryException;
+use Illuminate\Validation\ValidationException;
 
 class SharedMovieController extends Controller
 {
@@ -45,21 +48,32 @@ class SharedMovieController extends Controller
     {
         //
         $this->validate($request, ['youtubeURL' => ['required', 'max:255']]);
-        $movie = $this->_videoDetails($request->youtubeURL);
+        try {
+            $movie = $this->_videoDetails($request->youtubeURL);
+        } catch (Exception $e) {
+            throw ValidationException::withMessages(['youtubeURL' => ['An error occured while saving video.']]);
+        }
         $result = json_decode($movie);
         $dot = Arr::dot($result);
         $snippet =  Arr::get($dot, 'items.0')->snippet;
 
         if (isset($snippet)) {
-            $ytmovie = SharedMovie::create(
-                [
-                    'video_id' => $request->youtubeURL,
-                    'title' => $snippet->title,
-                    'description' => $snippet->description,
-                    'thumbnails' => json_encode($snippet->thumbnails),
-                    'user_id' => $request->user,
-                ]
-            );
+            try {
+                $ytmovie = SharedMovie::create(
+                    [
+                        'video_id' => $request->youtubeURL,
+                        'title' => $snippet->title,
+                        'description' => $snippet->description,
+                        'thumbnails' => json_encode($snippet->thumbnails),
+                        'user_id' => $request->user,
+                    ]
+                );
+            } catch (QueryException $e) {
+                $errorCode = $e->errorInfo[1];
+                if ($errorCode == 1062) {
+                    throw ValidationException::withMessages(['youtubeURL' => ['Youtube movie already exist.']]);
+                }
+            }
             $added = SharedMovie::with('movieVotes', 'user')->where('id', $ytmovie->id)->first();
             return $added;
         }

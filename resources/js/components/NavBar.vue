@@ -26,6 +26,7 @@
                     @blur="$v.youtubeURL.$touch()"
                     :error-messages="videoURLErrors"
                     ></v-text-field>
+                    <span v-if="errors.youtubeURL" class="error--text ml-8">{{errors.youtubeURL[0]}}</span>
                     <v-btn color="success" width="100%" @click="shareYTMovie" :loading="saving"><v-icon left>share</v-icon>Share</v-btn>
                 </v-card-text>
             </v-card>
@@ -81,7 +82,8 @@ export default {
             shareMovie:false,
             youtubeURL:'',
             user:null,
-            saving:false
+            saving:false,
+            errors:[]
         }
     },
     mounted(){
@@ -128,11 +130,22 @@ export default {
                     this.shareMovie = false;
                     this.saving = false;
                 })
+                .catch((errors)=>{
+                    console.log('navbar errors',errors);
+                    if(errors.response.status === 422){
+                        this.errors = errors.response.data.errors;
+                    }
+                    if(errors.response.status === 500){
+                       this.errors = errors.response.data.errors;
+                    }
+                    this.saving = false;
+                })
             }
         },
         closeShare(){
             this.youtubeURL = '';
             this.$v.$reset();
+            this.errors = [];
         },
         getUser(){
              User.auth()

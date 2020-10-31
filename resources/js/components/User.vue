@@ -34,11 +34,18 @@
             </v-row>
         </v-container>
         <v-footer absolute class="font-weight-medium">
-             <paginate collection='movies' class="mx-auto"
+            <rowperpage collection='movies'
+            store='youtube'
+            v-on:updaterow="displayData"
+            />
+
+            <paginate 
+            collection='movies'
+            class="mx-auto"
             store='youtube'
             :getItem="getAllMovies"
             moduleCurrentPage='setCurrentPage'
-        />
+            />
         </v-footer>
     </v-card>
 </template>
@@ -80,9 +87,12 @@ export default {
         }
     },
     computed:{
-        ...mapGetters(["getMovies"]),
+        ...mapGetters(["getMovies", "getPerPage"]),
     },
     methods:{
+        displayData(){
+            this.getAllMovies({page:1, rows:this.getPerPage});
+        },
         getAllMovies(param){
             youtube.getVideos(param)
             .then((response)=>{
@@ -140,7 +150,7 @@ export default {
         if(this.isLoggedIn){
             this.getUser();
         }
-        this.getAllMovies({page:1, rows:5});
+        this.getAllMovies({page:1, rows:this.getPerPage});
     }
 }
 </script>
